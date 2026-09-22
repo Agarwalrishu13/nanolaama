@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nanoLaama — talk to an AI on your own computer</title>
+<meta name="description" content="A friendly local AI chat. No code, no accounts, no terminal.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦙</text></svg>">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="app">
+  <!-- ------------------------------------------------------------ sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">🦙</div>
+      <div>
+        <div class="brand-name">nanoLaama</div>
+        <div class="brand-sub" id="brandSub">loading…</div>
+      </div>
+    </div>
+
+    <div class="sidebar-actions">
+      <button class="btn primary" id="newChatBtn">＋&nbsp; New chat</button>
+      <button class="btn" id="modelsBtn">🤖&nbsp; Models</button>
+    </div>
+
+    <div class="sidebar-section">Your chats</div>
+    <div class="chat-list" id="chatList"></div>
+
+    <div class="sidebar-foot">
+      <div id="footWhere">Everything stays on this computer.</div>
+      <div><kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line</div>
+    </div>
+  </aside>
+
+  <!-- --------------------------------------------------------------- main -->
+  <main class="main">
+    <div class="topbar">
+      <button class="btn ghost small" id="menuBtn" style="display:none">☰</button>
+      <button class="engine-pill" id="enginePill" title="Choose which AI answers">
+        <span class="dot" id="engineDot"></span>
+        <span class="label" id="engineLabel">Looking for an AI…</span>
+        <span class="caret">▾</span>
+      </button>
+      <div class="topbar-spacer"></div>
+      <label class="switch" title="Show the knobs and the speeds">
+        <input type="checkbox" id="expertToggle"> Expert mode
+      </label>
+      <button class="btn ghost small" id="exportBtn" title="Save this chat as a file">⬇︎ Save</button>
+      <button class="btn ghost small" id="settingsBtn" title="Settings">⚙︎</button>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="composer">
+      <div class="composer-inner">
+        <textarea id="input" rows="1" placeholder="Ask anything…  (or drop a model file anywhere on this window)"></textarea>
+        <button class="btn send" id="sendBtn" title="Send">↑</button>
+      </div>
+      <div class="composer-hint">
+        <span id="composerHint">Runs on your computer · nothing is sent to the internet</span>
+        <span id="composerStats" class="expert-only"></span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ------------------------------------------------------------------ modals -->
+<div class="backdrop" id="modelsModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Models</h2>
+      <button class="btn ghost small" data-close="modelsModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="group">
+        <h3>Ready to use</h3>
+        <p class="help" id="readyHelp">These are the models already on this computer.</p>
+        <div class="model-grid" id="installedList"></div>
+      </div>
+      <div class="group">
+        <h3>Download a new one</h3>
+        <p class="help">One click and it arrives. The smaller ones work on any laptop.</p>
+        <div class="row" id="downloadEngineRow"></div>
+        <div class="model-grid" id="catalogList"></div>
+        <div class="log" id="downloadLog"></div>
+        <div class="bar" id="downloadBar" style="display:none"><span></span></div>
+      </div>
+      <div class="group">
+        <h3>Have a model file already?</h3>
+        <p class="help">
+          Drop a <code>.gguf</code> file anywhere on this window and nanoLaama will make it usable.
+        </p>
+        <div class="model-grid" id="fileList"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="modelsModal">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="backdrop" id="settingsModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Settings</h2>
+      <button class="btn ghost small" data-close="settingsModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="group">
+        <h3>Answering style</h3>
+        <div class="field">
+          <label for="tempInput">Creativity <span class="hint" id="tempHint">(0 = predictable, 1 = adventurous)</span></label>
+          <input type="number" id="tempInput" min="0" max="2" step="0.1">
+        </div>
+        <div class="field">
+          <label for="maxTokensInput">Longest answer</label>
+          <input type="number" id="maxTokensInput" min="32" max="8192" step="32">
+          <div class="hint">Roughly this many words. Bigger answers take longer.</div>
+        </div>
+        <div class="field">
+          <label for="systemInput">Standing instructions <span class="hint">(optional)</span></label>
+          <textarea id="systemInput" rows="3" placeholder="For example: Answer in simple words, like I am new to this."></textarea>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Your AIs</h3>
+        <p class="help" id="enginesHelp">Where nanoLaama looks for an AI to talk to.</p>
+        <div class="model-grid" id="engineList"></div>
+        <div class="row">
+          <button class="btn small" id="rescanBtn">↻ Look again</button>
+          <button class="btn small" id="installBtn">⬇︎ Install Ollama for me</button>
+        </div>
+        <div class="log" id="installLog"></div>
+      </div>
+
+      <div class="group">
+        <h3>Your own engine — nanollama.c</h3>
+        <p class="help">
+          The from-scratch C engine from the same family as this app. nanoLaama can find it,
+          build it, and run the models it was trained on — all offline.
+        </p>
+        <div class="model-grid" id="nativeCard"></div>
+        <div class="field">
+          <label for="nativePath">Folder holding nanollama.c <span class="hint">(optional)</span></label>
+          <input type="text" id="nativePath" placeholder="C:\path\to\nanollama.c">
+        </div>
+        <div class="row">
+          <button class="btn small" id="nativeFindBtn">Find it</button>
+          <button class="btn small" id="nativeBuildBtn">Build it</button>
+          <button class="btn small" id="nativeStopBtn">Stop engine</button>
+        </div>
+        <div class="log" id="nativeLog"></div>
+      </div>
+
+      <div class="group">
+        <h3>Another AI service</h3>
+        <p class="help">
+          If you pay for an AI service that speaks the same language as OpenAI, you can point
+          nanoLaama at it. Most people can ignore this.
+        </p>
+        <div class="field">
+          <label for="customName">Name</label>
+          <input type="text" id="customName" placeholder="My AI service">
+        </div>
+        <div class="field">
+          <label for="customUrl">Address</label>
+          <input type="text" id="customUrl" placeholder="https://api.example.com/v1">
+        </div>
+        <div class="field">
+          <label for="customKey">Key <span class="hint">(kept on this computer only)</span></label>
+          <input type="password" id="customKey" placeholder="sk-…">
+        </div>
+        <div class="row"><button class="btn small" id="customAddBtn">Add it</button></div>
+      </div>
+
+      <div class="group">
+        <h3>Where things are kept</h3>
+        <p class="help" id="aboutInfo">…</p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn primary" data-close="settingsModal">Save and close</button>
+    </div>
+  </div>
+</div>
+
+<div class="dropzone" id="dropzone">
+  <div class="inner">
+    <h2>Drop the model file here</h2>
+    <p id="dropHint">.gguf files run with Ollama · .bin files run with your own engine</p>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

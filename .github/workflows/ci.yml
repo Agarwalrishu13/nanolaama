@@ -1,0 +1,33 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: python ${{ matrix.python }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      # The whole point of this app: no dependencies to install.
+      - name: Prove there is nothing to install
+        run: python -c "import nanolaama, nanolaama.server, nanolaama.backends, nanolaama.native, nanolaama.httpbase"
+
+      - name: Doctor (prints what the runner has)
+        run: python -m nanolaama doctor
+
+      - name: Tests
+        run: python -m unittest discover tests -v
