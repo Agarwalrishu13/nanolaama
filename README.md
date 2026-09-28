@@ -20,6 +20,13 @@ it can set one up for you.
 > **Part of [the nano family](https://github.com/Agarwalrishu13/nano)** — eleven offline-first apps for people who do not code. This is the map of the whole project.
 
 
+## What's new in 0.2
+
+- **Save the conversation.** One press writes the whole chat — who said what —
+  as a file in `~/.nanolaama/exports/`.
+- **Personalities.** Pick "Patient teacher", "Storyteller", "Coder helper" or
+  "Straight to the point" — the AI's standing instructions fill themselves in.
+
 ## What this is, in one paragraph
 
 Most people who would benefit from a local AI never get one, because getting one

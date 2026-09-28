@@ -3,7 +3,7 @@
 No code to write. No terminal to learn. No account to create.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 APP_NAME = "nanoLaama"
 TAGLINE = "Talk to an AI that runs on your own computer."
 

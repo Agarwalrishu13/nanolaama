@@ -10,6 +10,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from pathlib import Path
 import urllib.error
 import urllib.request
 
@@ -291,3 +292,45 @@ class TestHardware(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class ExportChatTests(unittest.TestCase):
+    """The conversation saved as one readable file, in your own folder."""
+
+    def test_a_conversation_is_exported_who_said_what(self):
+        import json as _json
+        import threading as _threading
+        import time as _time
+        import urllib.request as _urllib
+        from nanolaama import server as _server
+        import nanolaama.httpbase as _httpbase
+
+        app = _server.create_app()
+        httpd = _httpbase._Server(("127.0.0.1", 0), app)
+        port = httpd.server_address[1]
+        worker = _threading.Thread(target=httpd.serve_forever, daemon=True)
+        worker.start()
+        _time.sleep(0.4)
+        try:
+            body = _json.dumps({
+                "title": "evening questions",
+                "messages": [
+                    {"role": "user", "content": "Why is the sky blue?"},
+                    {"role": "assistant", "content": "Air scatters sunlight; blue scatters most."},
+                ],
+            }).encode("utf-8")
+            request = _urllib.Request("http://127.0.0.1:%d/api/export" % port, data=body,
+                headers={"Content-Type": "application/json", "Origin": "http://127.0.0.1:%d" % port},
+                method="POST")
+            with _urllib.urlopen(request, timeout=10) as response:
+                data = _json.loads(response.read().decode("utf-8"))
+            self.assertTrue(data["ok"], data)
+            saved = Path(data["path"])
+            text = saved.read_text(encoding="utf-8")
+            self.assertIn("# evening questions", text)
+            self.assertIn("**You:**", text)
+            self.assertIn("**nanoLaama:**", text)
+            self.assertIn("Air scatters sunlight", text)
+        finally:
+            httpd.shutdown()
+            httpd.server_close()

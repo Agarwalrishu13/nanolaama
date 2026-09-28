@@ -689,6 +689,10 @@ function fillSettings() {
   $('tempInput').value = settings.temperature ?? 0.7;
   $('maxTokensInput').value = settings.max_tokens ?? 512;
   $('systemInput').value = settings.system_prompt || '';
+  $('personaSelect').addEventListener('change', () => {
+    const chosen = $('personaSelect').value;
+    if (chosen) $('systemInput').value = chosen;
+  });
   $('expertToggle').checked = Boolean(settings.expert_mode);
   document.body.classList.toggle('expert', Boolean(settings.expert_mode));
 
@@ -1092,3 +1096,21 @@ function wire() {
     } catch (err) { /* server busy; try again later */ }
   }, 8000);
 })();
+
+// Save the conversation as a file, straight from the page.
+$('exportChatBtn').addEventListener('click', async () => {
+  const messages = (state.chat.messages || [])
+    .filter((m) => m.content && (m.role === 'user' || m.role === 'assistant'))
+    .map((m) => ({ role: m.role, content: m.content }));
+  if (!messages.length) { toast('Say something first — then there is something to save.', 'bad'); return; }
+  try {
+    const data = await api('/api/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'nanoLaama conversation', messages }),
+    });
+    if (data.ok) toast('Saved to ' + data.path, 'good');
+  } catch (error) {
+    toast(String(error.message || error), 'bad');
+  }
+});

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nanolaama"
-version = "0.1.0"
+version = "0.2.0"
 description = "Talk to an AI on your own computer. No code, no terminal, no accounts."
 readme = "README.md"
 requires-python = ">=3.9"

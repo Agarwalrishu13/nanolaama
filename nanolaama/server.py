@@ -7,6 +7,7 @@ interesting work happens in :mod:`backends` and :mod:`native`.
 
 from __future__ import annotations
 
+import datetime as _dt
 import os
 import re
 import shutil
@@ -15,6 +16,7 @@ import sys
 import threading
 import uuid
 from pathlib import Path
+from urllib.parse import urlparse
 
 from . import APP_NAME, __version__, backends, hardware, native, store
 from .httpbase import App, Error, Json, Stream, Text
@@ -33,10 +35,52 @@ def _safe_filename(name: str) -> str:
     return cleaned[:180] or "model.bin"
 
 
+_OWN_ORIGINS = ("127.0.0.1", "localhost", "::1", "[::1]")
+
+
+def _from_local_page(request, require_json: bool = False) -> bool:
+    """The family's guard: only this app's own page may drive it."""
+    origin = request.header("Origin")
+    if origin:
+        host = urlparse(origin).hostname or ""
+        if host not in _OWN_ORIGINS:
+            return False
+    if require_json:
+        content_type = (request.header("Content-Type") or "").split(";")[0].strip()
+        if content_type != "application/json":
+            return False
+    return True
+
+
 def create_app() -> App:
     app = App(APP_NAME, WEB_DIR, __version__)
 
     # ---------------------------------------------------------------- status
+    @app.post("/api/export")
+    def export_chat(request):
+        """The conversation, as one readable file you can keep."""
+        if not _from_local_page(request, require_json=True):
+            return Error("This app only answers to pages on this computer.", 403)
+        payload = request.json() or {}
+        title = str(payload.get("title") or "nanoLaama conversation").strip()[:120]
+        messages = [m for m in (payload.get("messages") or [])
+                    if isinstance(m, dict) and str(m.get("content") or "").strip()]
+        if not messages:
+            return Error("There is nothing to export yet — say something first.")
+        lines = ["# %s" % title, "",
+                 "Saved from nanoLaama on %s." % _dt.date.today().isoformat(),
+                 "Who said what, top to bottom:", ""]
+        for message in messages:
+            who = "You" if message.get("role") == "user" else "nanoLaama"
+            lines += ["**%s:**" % who, "", str(message["content"]).strip(), ""]
+        root = store.data_dir() / "exports"
+        root.mkdir(parents=True, exist_ok=True)
+        stamp = _dt.datetime.now().strftime("%Y-%m-%d %H%M%S")
+        safe = re.sub(r"[^\w\- ]+", "", title)[:60].strip() or "conversation"
+        target = root / ("%s %s.md" % (safe, stamp))
+        target.write_text("\n".join(lines), encoding="utf-8")
+        return Json({"ok": True, "path": str(target)})
+
     @app.get("/api/health")
     def health(_request):
         return Json({"ok": True, "app": APP_NAME, "version": __version__})

@@ -23,6 +23,7 @@
 
     <div class="sidebar-actions">
       <button class="btn primary" id="newChatBtn">＋&nbsp; New chat</button>
+      <button class="btn ghost" id="exportChatBtn" title="Save this conversation as a file">⬇ Save</button>
       <button class="btn" id="modelsBtn">🤖&nbsp; Models</button>
     </div>
 
@@ -121,6 +122,14 @@
           <div class="hint">Roughly this many words. Bigger answers take longer.</div>
         </div>
         <div class="field">
+          <label for="personaSelect">Who should it be?</label>
+          <select id="personaSelect">
+            <option value="">Helpful assistant (plain)</option>
+            <option value="You are a patient teacher. Explain things in very simple words, one idea at a time, and check the reader understood before moving on.">Patient teacher</option>
+            <option value="You tell warm, simple stories to explain ideas, like a friendly bedtime storyteller.">Storyteller</option>
+            <option value="You are a careful programmer. Give short, correct code examples and explain every step in plain words.">Coder helper</option>
+            <option value="You answer in one or two short sentences. No long explanations unless asked.">Straight to the point</option>
+          </select>
           <label for="systemInput">Standing instructions <span class="hint">(optional)</span></label>
           <textarea id="systemInput" rows="3" placeholder="For example: Answer in simple words, like I am new to this."></textarea>
         </div>
